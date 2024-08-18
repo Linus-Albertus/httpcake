@@ -98,17 +98,30 @@ def run(ctx: click.Context, request: int) -> None:
 def delete(ctx: click.Context, request: int) -> None:
     """Delete a request from name"""
     request_dir = ctx.obj["request_dir"]
+    deleted_request = None
 
     try:
         with open(f"{request_dir}/requests.json", "r") as file:
             existing_data = json.load(file)
 
-        deleted_request = existing_data.pop(request - 1)
+        if request == 0:
+            deleted_request = existing_data.pop()
+            click.echo("Deleted last request.")
+        if request < 0:
+            click.echo("You must enter a positive integer or zero.")
+        if len(existing_data) != 0:
+            if request >= 1 and request <= len(existing_data):
+                deleted_request = existing_data.pop(request - 1)
+            elif request > len(existing_data):
+                click.echo("Request out of range!")
 
-        with open(f"{request_dir}/requests.json", "w") as file:
-            json.dump(existing_data, file, indent=4)
+            with open(f"{request_dir}/requests.json", "w") as file:
+                json.dump(existing_data, file, indent=4)
 
-        click.echo(f"Deleted request #{request}: {deleted_request["name"]}.")
+            if deleted_request is not None:
+                click.echo(f"Deleted request #{request}: {deleted_request["name"]}.")
+        else:
+            click.echo("No requests saved!")
 
     except FileNotFoundError:
         click.echo(f"No save request for this project!")
