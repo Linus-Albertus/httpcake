@@ -12,6 +12,7 @@ click = "^8.1.7"
 httpie = "^3.2.2"
 python-dotenv = "^1.0.1"
 
+toml = "^0.10.2"
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.1"
 isort = "^5.13.2"

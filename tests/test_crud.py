@@ -13,7 +13,7 @@ with open("./tests/fixtures/requests.json", "r") as file:
 
 
 def test_create():
-    result = runner.invoke(cli, ["create", "--name", "Test Request", "--request",  "http httpie.io/hello"])
+    result = runner.invoke(cli, ["create", "--name", "Test Request", "--request",  "httpie.io/hello"])
     assert result.exit_code == 0
     assert result.output == 'Request saved.\n'
 

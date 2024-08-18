@@ -1,6 +1,7 @@
 import click
-import json
 import subprocess
+
+import toml
 
 
 @click.command()
@@ -16,31 +17,29 @@ def create(ctx: click.Context, name: str, request: str, method: str, tags: str) 
     # TODO: create dir if not exists
 
     try:
-        with open(f"{request_dir}/requests.json", "r") as file:
-            existing_data = json.load(file)
-
+        with open(f"{request_dir}/requests.toml", "r") as file:
+            existing_data = toml.load(file)
     except FileNotFoundError:
-        existing_data = []
+        existing_data = {}
 
     request_data = {
-        "name": name,
-        "httpie_request": request,
-        "method": method,
-        "tags": tags.split(",") if tags else [],
+        name: {
+            "httpie_request": request,
+            "method": method,
+            "tags": tags.split(",") if tags else [],
+        }
     }
 
     # TODO: check httpie request
     # TODO: save response if is a aceptable one
 
     # Append new data
-    existing_names = [n["name"] for n in existing_data]
-    if name not in existing_names:
-        existing_data.append(request_data)
+    if name not in existing_data:
+        existing_data.update(request_data)
 
-        with open(f"{request_dir}/requests.json", "w") as file:
-            json.dump(existing_data, file, indent=4)
+        with open(f"{request_dir}/requests.toml", "w") as file:
+            toml.dump(existing_data, file)
         click.echo("Request saved.")
-
     else:
         click.echo("Choose another name! That one is already taken.")
 
@@ -52,18 +51,18 @@ def ls(ctx: click.Context) -> None:
     request_dir = ctx.obj["request_dir"]
 
     try:
-        with open(f"{request_dir}/requests.json", "r") as file:
-            existing_data = json.load(file)
+        with open(f"{request_dir}/requests.toml", "r") as file:
+            existing_data = toml.load(file)
 
         counter = 1
-        for d in existing_data:
+        for name, data in existing_data.items():
             click.echo(
-                f"({counter}) Name: {d["name"]}, Method: {d["method"]}, Request: {d["httpie_request"]}, Tags: {d["tags"]}"
+                f"({counter}) Name: {name}, Method: {data['method']}, Request: {data['httpie_request']}, Tags: {data['tags']}"
             )
             counter += 1
 
     except FileNotFoundError:
-        click.echo(f"No saved requests for this project!")
+        click.echo("No saved requests for this project!")
 
 
 @click.command()
@@ -74,22 +73,31 @@ def run(ctx: click.Context, request: int) -> None:
     request_dir = ctx.obj["request_dir"]
 
     try:
-        with open(f"{request_dir}/requests.json", "r") as file:
-            existing_data = json.load(file)
+        with open(f"{request_dir}/requests.toml", "r") as file:
+            existing_data = toml.load(file)
 
-        request_body = existing_data[request - 1]
+        request -= 1
+        if 0 <= request < len(existing_data):
+            # Access request by index
+            request_data = list(existing_data.values())[request]
 
-        click.echo(
-            f"Running: {request_body["method"]}, {request_body["httpie_request"]}",
-            nl=True,
-        )
-        click.echo()
-        subprocess.run(
-            ["http", str(request_body["method"]), str(request_body["httpie_request"])]
-        )
+            click.echo(
+                f"Running: {request_data['method']}, {request_data['httpie_request']}",
+                nl=True,
+            )
+            click.echo()
+            subprocess.run(
+                [
+                    "http",
+                    str(request_data["method"]),
+                    str(request_data["httpie_request"]),
+                ]
+            )
+        else:
+            click.echo("Request out of range!")
 
     except FileNotFoundError:
-        click.echo(f"No save requests for this project!")
+        click.echo("No saved requests for this project!")
 
 
 @click.command()
@@ -101,28 +109,32 @@ def delete(ctx: click.Context, request: int) -> None:
     deleted_request = None
 
     try:
-        with open(f"{request_dir}/requests.json", "r") as file:
-            existing_data = json.load(file)
+        with open(f"{request_dir}/requests.toml", "r") as file:
+            existing_data = toml.load(file)
 
         if request == 0:
-            deleted_request = existing_data.pop()
+            # Get the last key (request name)
+            last_key = list(existing_data.keys())[-1]
+            deleted_request = existing_data.pop(last_key)
             click.echo("Deleted last request.")
-        if request < 0:
+        elif request < 0:
             click.echo("You must enter a positive integer or zero.")
-        if len(existing_data) != 0:
-            if request >= 1 and request <= len(existing_data):
-                deleted_request = existing_data.pop(request - 1)
-            elif request > len(existing_data):
+        elif len(existing_data) != 0:
+            if 1 <= request <= len(existing_data):
+                # Get the key at the specified index
+                keys = list(existing_data.keys())
+                deleted_key = keys[request - 1]
+                deleted_request = existing_data.pop(deleted_key)
+            else:
                 click.echo("Request out of range!")
 
-            with open(f"{request_dir}/requests.json", "w") as file:
-                json.dump(existing_data, file, indent=4)
+            with open(f"{request_dir}/requests.toml", "w") as file:
+                toml.dump(existing_data, file)
 
             if deleted_request is not None:
-                click.echo(f"Deleted request #{request}: {deleted_request["name"]}.")
+                click.echo(f"Deleted request #{request}: {deleted_key}.")
         else:
             click.echo("No requests saved!")
 
     except FileNotFoundError:
-        click.echo(f"No save request for this project!")
-
+        click.echo("No save request for this project!")
