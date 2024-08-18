@@ -9,14 +9,16 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 click = "^8.1.7"
-
-
 httpie = "^3.2.2"
 python-dotenv = "^1.0.1"
+
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.1"
-
 isort = "^5.13.2"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
