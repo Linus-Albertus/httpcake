@@ -1,0 +1,38 @@
+[
+    {
+        "name": "getMeters",
+        "httpie_request": "httpie.io/hello",
+        "method": "GET",
+        "tags": []
+    },
+    {
+        "name": "getMeters2",
+        "httpie_request": "httpie.io/hello",
+        "method": "GET",
+        "tags": []
+    },
+    {
+        "name": "getMeters2",
+        "httpie_request": "httpie.io/hello",
+        "method": "GET",
+        "tags": []
+    },
+    {
+        "name": "getMeters2",
+        "httpie_request": "httpie algo algo",
+        "method": "GET",
+        "tags": []
+    },
+    {
+        "name": "getMeters2",
+        "httpie_request": "httpie algo algo",
+        "method": "GET",
+        "tags": []
+    },
+    {
+        "name": "getMeters2",
+        "httpie_request": "httpie algo algo",
+        "method": "GET",
+        "tags": []
+    }
+]
