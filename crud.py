@@ -88,7 +88,7 @@ def run(ctx: click.Context, request: int) -> None:
             click.echo()
             subprocess.run(
                 [
-                    "http",
+                    "https",
                     str(request_data["method"]),
                     str(request_data["httpie_request"]),
                 ]
