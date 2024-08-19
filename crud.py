@@ -1,7 +1,9 @@
-import click
 import subprocess
 
+import click
 import toml
+
+from config import load_config_file, save_config_file
 
 
 @click.command()
@@ -16,11 +18,7 @@ def create(ctx: click.Context, name: str, request: str, method: str, tags: str) 
 
     # TODO: create dir if not exists
 
-    try:
-        with open(f"{request_dir}/requests.toml", "r") as file:
-            existing_data = toml.load(file)
-    except FileNotFoundError:
-        existing_data = {}
+    loaded_data = load_config_file(request_dir)
 
     request_data = {
         name: {
@@ -34,12 +32,13 @@ def create(ctx: click.Context, name: str, request: str, method: str, tags: str) 
     # TODO: save response if is a aceptable one
 
     # Append new data
-    if name not in existing_data:
-        existing_data.update(request_data)
+    if name not in loaded_data:
+        loaded_data.update(request_data)
+        file_saved = save_config_file(loaded_data, request_dir)
 
-        with open(f"{request_dir}/requests.toml", "w") as file:
-            toml.dump(existing_data, file)
-        click.echo("Request saved.")
+        if file_saved:
+            click.echo("Request saved.")
+
     else:
         click.echo("Choose another name! That one is already taken.")
 
@@ -51,11 +50,10 @@ def ls(ctx: click.Context) -> None:
     request_dir = ctx.obj["request_dir"]
 
     try:
-        with open(f"{request_dir}/requests.toml", "r") as file:
-            existing_data = toml.load(file)
+        loaded_data = load_config_file(request_dir)
 
         counter = 1
-        for name, data in existing_data.items():
+        for name, data in loaded_data.items():
             click.echo(
                 f"({counter}) Name: {name}, Method: {data['method']}, Request: {data['httpie_request']}, Tags: {data['tags']}"
             )
@@ -73,13 +71,12 @@ def run(ctx: click.Context, request: int) -> None:
     request_dir = ctx.obj["request_dir"]
 
     try:
-        with open(f"{request_dir}/requests.toml", "r") as file:
-            existing_data = toml.load(file)
-
+        loaded_data = load_config_file(request_dir)
         request -= 1
-        if 0 <= request < len(existing_data):
+
+        if 0 <= request < len(loaded_data):
             # Access request by index
-            request_data = list(existing_data.values())[request]
+            request_data = list(loaded_data.values())[request]
 
             click.echo(
                 f"Running: {request_data['method']}, {request_data['httpie_request']}",
@@ -93,6 +90,7 @@ def run(ctx: click.Context, request: int) -> None:
                     str(request_data["httpie_request"]),
                 ]
             )
+            
         else:
             click.echo("Request out of range!")
 
@@ -109,27 +107,29 @@ def delete(ctx: click.Context, request: int) -> None:
     deleted_request = None
 
     try:
-        with open(f"{request_dir}/requests.toml", "r") as file:
-            existing_data = toml.load(file)
+        loaded_data = load_config_file(request_dir)
 
         if request == 0:
             # Get the last key (request name)
-            last_key = list(existing_data.keys())[-1]
-            deleted_request = existing_data.pop(last_key)
+            last_key = list(loaded_data.keys())[-1]
+            deleted_request = loaded_data.pop(last_key)
+            save_config_file(loaded_data, request_dir)
             click.echo("Deleted last request.")
+
         elif request < 0:
             click.echo("You must enter a positive integer or zero.")
-        elif len(existing_data) != 0:
-            if 1 <= request <= len(existing_data):
+
+        elif len(loaded_data) != 0:
+
+            if 1 <= request <= len(loaded_data):
                 # Get the key at the specified index
-                keys = list(existing_data.keys())
+                keys = list(loaded_data.keys())
                 deleted_key = keys[request - 1]
-                deleted_request = existing_data.pop(deleted_key)
+                deleted_request = loaded_data.pop(deleted_key)
+
             else:
                 click.echo("Request out of range!")
-
-            with open(f"{request_dir}/requests.toml", "w") as file:
-                toml.dump(existing_data, file)
+            save_config_file(loaded_data, request_dir)
 
             if deleted_request is not None:
                 click.echo(f"Deleted request #{request}: {deleted_key}.")
